@@ -1246,26 +1246,34 @@ const INTRO=(function(){
                'Third opinion sought. Third opinion was also him.',
                'Panel returned clean. Panel has never returned anything else.',
                'Control group also had a moustache, which ruined the control group.'];
-  let busy=false,n=0;
+  let busy=false,n=0,settled=true,backstop=0;
+  const DUR=1750;
+  function land(){
+    if(settled)return;settled=true;
+    out.textContent='NATTY';
+    void win.offsetWidth;win.classList.add('hit');
+    note.textContent=NOTES[n%NOTES.length];n++;
+    go.textContent='Run it again →';busy=false;
+    clearTimeout(backstop);
+  }
   go.addEventListener('click',function(){
-    if(busy)return;busy=true;
+    if(busy)return;busy=true;settled=false;
     go.textContent='Testing…';win.classList.remove('hit');
-    const t0=performance.now(),DUR=1750;
+    const t0=performance.now();
     let nextAt=0;
     (function tick(ts){
+      if(settled)return;
       const T=(ts||performance.now())-t0;
-      if(T>=DUR){
-        out.textContent='NATTY';
-        void win.offsetWidth;win.classList.add('hit');
-        note.textContent=NOTES[n%NOTES.length];n++;
-        go.textContent='Run it again →';busy=false;return;
-      }
+      if(T>=DUR){land();return;}
       if(T>=nextAt){
         out.textContent=SPIN[(Math.random()*SPIN.length)|0];
         nextAt=T+40+Math.pow(T/DUR,3)*300;
       }
       requestAnimationFrame(tick);
     })();
+    // rAF is paused in a background tab, so a click followed by a tab switch
+    // left the machine stuck on "Testing…" forever. setTimeout still fires.
+    clearTimeout(backstop);backstop=setTimeout(land,DUR+90);
   });
 })();
 
